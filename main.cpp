@@ -1,5 +1,5 @@
 /**
- * @file Main.c
+ * @file main.c
  * Copyright (c) 2023 Dale Giancono All rights reserved.
  * 
  * @brief
@@ -8,9 +8,14 @@
 /*****************************************************************************/
 /*INLCUDES                                                                   */
 /*****************************************************************************/
-#include "InterProcessCommunication.hpp"
+#include "InterProcessSharedMemory.hpp"
 
 #include "unistd.h"
+#include <cstring>
+#include <iostream>
+#include <assert.h>
+#include <limits.h>
+#include <signal.h>
 
 /*****************************************************************************/
 /*MACROS                                                                     */
@@ -23,79 +28,77 @@
 /*****************************************************************************/
 /*FUNCTION declarations                                                      */
 /*****************************************************************************/
+void writerOne();
+void reader();
+void readerTwo();
+void readerThree();
 
 /*****************************************************************************/
 /*GLOBAL Data                                                                */
 /*****************************************************************************/
+InterProcessSharedMemory<int> sharedMemory;
 
 /*****************************************************************************/
 /* MAIN                                                                      */
 /*****************************************************************************/
 int main(int argc, const char **argv)
 {
-    InterProcessCommunication<int> comms;
     int writeData;
     int readData;
     int ret;
-    ret = comms.open("/tmp");
-    if(0 != ret)
+
+    pid_t parentPid;
+    pid_t childPid1;
+    pid_t childPid2;
+    pid_t childPid3;
+
+    parentPid = getpid();
+    childPid1 = fork();
+    assert((-1 != childPid1) && "Fork 1 FAILED");
+    if(0 == childPid1)
     {
-        perror(strerror(ret));
-        return -1;
+        reader();
     }
     else
     {
-        printf("open success\n");
+        writerOne();
+        kill(childPid1, SIGKILL);
     }
 
-    writeData = 10;
-    ret = comms.write(&writeData);
-    if(0 != ret)
-    {
-        perror(strerror(ret));
-    }
 
-    ret = comms.read(&readData);
-    if(0 != ret)
-    {
-        perror(strerror(ret));
-    }
-    else
-    {
-        printf("%d\n", readData);
-    }
-
-    writeData = 20;
-    comms.write(&writeData);
-    if(0 != ret)
-    {
-        perror(strerror(ret));
-    }
-    comms.read(&readData);
-    if(0 != ret)
-    {
-        perror(strerror(ret));
-    }
-    else
-    {
-        printf("%d\n", readData);
-    }
-    
-    writeData = 30;
-    comms.write(&writeData);
-    if(0 != ret)
-    {
-        perror(strerror(ret));
-    }
-    comms.read(&readData);
-    if(0 != ret)
-    {
-        perror(strerror(ret));
-    }
-    else
-    {
-        printf("%d\n", readData);
-    }
-    
-    comms.close();
 };
+
+void writerOne()
+{
+    int ret;
+    ret = sharedMemory.open(".", 0);
+    
+    assert(0 == ret && "FAIL: unable to open shared memory");
+
+    for(int i = INT_MIN; i < INT_MAX; i++)
+    {
+        sharedMemory.write(i);
+    }
+
+    sharedMemory.close();
+    sharedMemory.remove();
+
+
+}
+
+void reader()
+{
+    int ret;
+    int i;
+    ret = sharedMemory.open(".", 0);
+    
+    assert(0 == ret && "FAIL: unable to open shared memory");
+    while(1)
+    {
+        sharedMemory.read(i);
+        std::cout << "reader one: " << i << std::endl;
+        usleep(100000);
+    }
+
+    sharedMemory.close();
+}
