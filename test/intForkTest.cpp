@@ -1,5 +1,6 @@
 /**
- * @file main.c
+ * @file intTestFork.c
+ * Tests writing and reading integers using a parent and child process.
  * Copyright (c) 2023 Dale Giancono All rights reserved.
  * 
  * @brief
@@ -8,7 +9,7 @@
 /*****************************************************************************/
 /*INLCUDES                                                                   */
 /*****************************************************************************/
-#include "InterProcessSharedMemory.hpp"
+#include "../InterProcessSharedMemory.hpp"
 
 #include "unistd.h"
 #include <cstring>

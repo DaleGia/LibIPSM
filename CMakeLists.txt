@@ -5,4 +5,5 @@ cmake_minimum_required(VERSION 3.0)
 project(InterProcessSharedMemoryProject CXX)
 
 # Add your source files to the project
-add_executable(InterProcessSharedMemory main.cpp)
+add_executable(intForkTest test/intForkTest.cpp)
+add_executable(structThreadTest test/structThreadTest.cpp)
