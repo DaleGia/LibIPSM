@@ -34,6 +34,17 @@ template<class T> class InterProcessSharedMemory
 {
     public:
         /**
+         *  @brief This function deletes the shared memory and named semaphore, 
+         * incase they were not closed and removed properly previously.
+         * 
+         *  @param filepath filepath specifier for the shared memory. (see ftok)
+         *  @param key a key value to access the shared memory (see ftok).
+         *  @return 0 if successful, otherwise errno value
+         *   
+         */
+        int initialise(std::string filepath, const int key);
+
+        /**
          *  @brief Opens a shared memory value to read or write from 
          *   
          *  @param filepath filepath specifier for the shared memory. (see ftok)
@@ -88,10 +99,38 @@ template<class T> class InterProcessSharedMemory
         T* sharedMemory;
 };
 
+template<class T>  int InterProcessSharedMemory<T>::initialise(
+    std::string filepath, 
+    const int key)
+{
+    int ret;
+    ret = this->open(filepath, key);
+    if(0 != ret) 
+    {
+        return errno;
+    }
+    
+    ret = this->close();
+    
+    if(0 != ret) 
+    {
+        return errno;
+    }
+    
+    ret = this->remove();
+    if(0 != ret) 
+    {
+        return errno;
+    }
+
+    return 0;
+}
+
 template<class T>  int InterProcessSharedMemory<T>::open(
     std::string filepath, 
     const int key)
 {
+    int semCount;
     /* Gets the filepath and creates the semaphore filepath to open */
     this->filepath = filepath;
     this->semFilepath = this->filepath + "_sem";

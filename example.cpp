@@ -1,6 +1,6 @@
 /**
- * @file structThreadTest.c
- * A simple tests writing and reading structs using multiple threads.
+ * @file example.c
+ * A simple example writing and reading structs using threads.
  * Copyright (c) 2023 Dale Giancono All rights reserved.
  * 
  * @brief
@@ -9,7 +9,7 @@
 /*****************************************************************************/
 /*INLCUDES                                                                   */
 /*****************************************************************************/
-#include "../InterProcessSharedMemory.hpp"
+#include "InterProcessSharedMemory.hpp"
 
 #include "unistd.h"
 #include <cstring>
@@ -26,26 +26,21 @@
 /*****************************************************************************/
 /*OBJECT DECLARATIONS                                                        */
 /*****************************************************************************/
-struct testStruct
+struct exampleStruct
 {
-    long long a;
-    int b;
-    float c;
-    double d;
-    uint16_t e;
-    bool f;
+    long long time;
     char buffer[200];
 };
 
 /*****************************************************************************/
 /*FUNCTION declarations                                                      */
 /*****************************************************************************/
-static void* reader(void* arg);
+static void* readerFunction(void* arg);
 
 /*****************************************************************************/
 /*GLOBAL Data                                                                */
 /*****************************************************************************/
-InterProcessSharedMemory<testStruct> sharedMemory;
+
 
 /*****************************************************************************/
 /* MAIN                                                                      */
@@ -53,17 +48,29 @@ InterProcessSharedMemory<testStruct> sharedMemory;
 int main(int argc, const char **argv)
 {
     int ret;
-    const int numberOfReaders = 10;
-    for(int i = 0; i <  numberOfReaders; i++)
-    {
-        pthread_t thread;
-        pthread_create(&thread, NULL, reader, NULL);
-    }
+    pthread_t readerThread;
 
-    ret = sharedMemory.open(".", 0xFF);
+    InterProcessSharedMemory<exampleStruct> sharedMemory;  
+    /** This removes and unlinks the shared memory and named semaphore
+     * incase they were not properly dealt with previously.
+     */
+    ret = sharedMemory.initialise("/tmp", 0xFF);
+    assert(0 == ret && "FAIL: unable to initialise shared memory");
+    printf("Initialised shared memory\n");
+    /* Start the reader thread*/
+    pthread_create(&readerThread, NULL, readerFunction, NULL);
 
-    for(int i = 0; i < 100000; i++)
+    /* open shared memory at specified path with specific key*/
+    ret = sharedMemory.open("/tmp", 0xFF);
+    assert(0 == ret && "FAIL: unable to open shared memory");
+    printf("Opened shared memory for writing\n");
+
+    for(int i = 0; i < 100; i++)
     {
+
+        /* continually get the current time and use it to write to 
+         shared memory 
+         */
         struct timeval currentTime;
         gettimeofday(&currentTime, NULL);
 
@@ -71,58 +78,54 @@ int main(int argc, const char **argv)
         long long microsSinceEpoch = 
             (long long)currentTime.tv_sec * 1000000 + currentTime.tv_usec;
 
-        struct testStruct data;
-        data.a = microsSinceEpoch;
-        data.b = microsSinceEpoch;
-        data.c = microsSinceEpoch;
-        data.d = microsSinceEpoch;
-        data.e = microsSinceEpoch;
-        data.f = false;
+        struct exampleStruct data;
+        data.time = microsSinceEpoch;
         memset(data.buffer, 0, sizeof(data.buffer));
         strcpy(data.buffer, "Hi!");
+
+        /* Write the data to shared memory */
         sharedMemory.write(data);
-        usleep(100000);
+
+        /* sleep for a while (20 milliseconds approx)*/
+        usleep(20000);
     }
+    printf("Finished writing\n");
+
+    /* Wait for the reader to be finished and properly unlink the shared
+     memory */
+    pthread_join(readerThread, NULL);
 
     sharedMemory.close();
     sharedMemory.remove();
-    
     return 0;
 };
 
-static void* reader(void* arg)
+static void* readerFunction(void* arg)
 {
-    static int readercount = 0;
-
     int ret;
-    struct testStruct data;
-    ret = sharedMemory.open(".", 0xFF);
-    
+    struct exampleStruct data;
+
+    InterProcessSharedMemory<exampleStruct> sharedMemory;
+
+    /* open the shared memory*/
+    ret = sharedMemory.open("/tmp", 0xFF);
     assert(0 == ret && "FAIL: unable to open shared memory");
-    int thisReaderCount = readercount++;
-    for(int i = 0; i < 100000; i++)
+    printf("Opened shared memory for reading\n");
+
+    sleep(1);
+
+    for(int i = 0; i < 20; i++)
     {
-
+        /* read the data*/
         sharedMemory.read(data);
-        struct timeval currentTime;
-        gettimeofday(&currentTime, NULL);
 
-        // Calculate the time in microseconds
-        long long microsSinceEpoch = (long long)currentTime.tv_sec * 1000000 + currentTime.tv_usec;
-
-        printf(
-            "reader %d: %llu %d %f %lf %u %d %s\n", 
-            thisReaderCount,
-            data.a, 
-            data.b, 
-            data.c, 
-            data.d, 
-            data.e, 
-            data.f,
-            data.buffer);
+        /** Do something with data here */
+    
         usleep(100000);
     }
+    printf("Finished reading\n");
 
     sharedMemory.close();
+    
     pthread_exit(NULL);
 }
