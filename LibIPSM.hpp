@@ -19,8 +19,8 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef INTERPROCESSSHAREDMEMORY_H_
-#define INTERPROCESSSHAREDMEMORY_H_
+#ifndef IPSM_H_
+#define IPSM_H_
 
 #include <sys/shm.h>
 #include <fcntl.h>     
@@ -30,7 +30,7 @@
 /** This class implements a way to read and write to shared memory accross 
  * different programs. 
 */
-template<class T> class InterProcessSharedMemory
+template<class T> class IPSM
 {
     public:
         /**
@@ -99,7 +99,7 @@ template<class T> class InterProcessSharedMemory
         T* sharedMemory;
 };
 
-template<class T>  int InterProcessSharedMemory<T>::initialise(
+template<class T>  int IPSM<T>::initialise(
     std::string filepath, 
     const int key)
 {
@@ -126,7 +126,7 @@ template<class T>  int InterProcessSharedMemory<T>::initialise(
     return 0;
 }
 
-template<class T>  int InterProcessSharedMemory<T>::open(
+template<class T>  int IPSM<T>::open(
     std::string filepath, 
     const int key)
 {
@@ -169,7 +169,7 @@ template<class T>  int InterProcessSharedMemory<T>::open(
     return 0;
 }
 
-template<class T>  int InterProcessSharedMemory<T>::write(T &data)
+template<class T>  int IPSM<T>::write(T &data)
 {
     int ret;
 
@@ -193,7 +193,7 @@ template<class T>  int InterProcessSharedMemory<T>::write(T &data)
     return 0;
 }
 
-template<class T>  int InterProcessSharedMemory<T>::read(T &buffer)
+template<class T>  int IPSM<T>::read(T &buffer)
 {
     int ret;
     /* Waits for the shared memory segment to be available via named semaphore 
@@ -215,7 +215,7 @@ template<class T>  int InterProcessSharedMemory<T>::read(T &buffer)
     return 0;
 }
 
-template<class T>  int InterProcessSharedMemory<T>::close(void)
+template<class T>  int IPSM<T>::close(void)
 {
     int ret;
     /* Detaches the shared memory segment. */
@@ -237,7 +237,7 @@ template<class T>  int InterProcessSharedMemory<T>::close(void)
 }
 
 
-template<class T>  int InterProcessSharedMemory<T>::remove(void)
+template<class T>  int IPSM<T>::remove(void)
 {
     int ret;
     /** marks shared memory segment for deletion*/
@@ -257,4 +257,4 @@ template<class T>  int InterProcessSharedMemory<T>::remove(void)
     return 0;
 }
 
-#endif /* INTERPROCESSSHAREDMEMORY_H_ */
+#endif /* IPSM_H_ */
