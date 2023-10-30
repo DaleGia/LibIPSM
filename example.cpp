@@ -9,7 +9,7 @@
 /*****************************************************************************/
 /*INLCUDES                                                                   */
 /*****************************************************************************/
-#include "InterProcessSharedMemory.hpp"
+#include "LibIPSM.hpp"
 
 #include "unistd.h"
 #include <cstring>
